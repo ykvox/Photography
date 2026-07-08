@@ -2,24 +2,24 @@ package net.blouflin.photography.networking;
 
 import net.blouflin.image2map.Image2Map;
 import net.blouflin.image2map.renderer.MapRenderer;
+import net.blouflin.photography.Photography;
 import net.blouflin.photography.PhotographyUtil;
 import net.blouflin.photography.client.PhotographyHud;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
+
 import java.util.concurrent.CompletableFuture;
 
 public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<CreatePicturePayload> ID = CustomPacketPayload.createType("photography_create_picture");
     public static final StreamCodec<FriendlyByteBuf, CreatePicturePayload> CODEC = StreamCodec.ofMember((value, buf) -> buf.writeInt(value.id).writeNbt(value.nbtCompound), buf -> new CreatePicturePayload(buf.readInt(),buf.readNbt()));
+    private static final boolean DEBUG_CAPTURE = Boolean.getBoolean("photography.debugCapture");
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -27,12 +27,13 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
     }
 
     public static void receive(Minecraft client, Integer id, CompoundTag nbtCompound) {
+        debugCapture("received create picture payload for map {}", id);
 
         CompletableFuture<Void> future = new CompletableFuture<>();
 
         client.execute(() -> {
+            debugCapture("preparing HUD for capture");
 
-            HolderLookup.Provider registryLookup = client.player.registryAccess();
             MapItemSavedData mapState = PhotographyUtil.fromNbt(nbtCompound);
 
             PhotographyHud.CAMERA_SCOPE_TO_RENDER = PhotographyHud.CAMERA_SCOPE_CLEAR;
@@ -40,85 +41,62 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
             PhotographyHud.setScreenshotFuture(future);
 
             future.thenRun(() -> {
-                //ScreenshotRecorder.saveScreenshot(client.runDirectory, client.getFramebuffer(), (text) -> {});
+                debugCapture("HUD frame completed; starting screenshot capture");
 
                 PhotographyHud.CAMERA_SCOPE_TO_RENDER = PhotographyHud.CAMERA_SCOPE;
                 PhotographyHud.spyglassFlashOpacity = 1.0f;
                 PhotographyHud.isTakingPhoto = false;
 
                 Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(), (nativeImage -> {
-                    int[] pixels = nativeImage.getPixels();
-                    BufferedImage bufferedImage = new BufferedImage(nativeImage.getWidth(), nativeImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
-                    bufferedImage.setRGB(0, 0, nativeImage.getWidth(), nativeImage.getHeight(), pixels, 0, nativeImage.getWidth());
-                    //System.out.println("bufferedImage: "+bufferedImage);
-                    nativeImage.close();
-
+                    debugCapture("screenshot captured: {}x{}", nativeImage.getWidth(), nativeImage.getHeight());
                     try {
-                        bufferedImage = CreatePicturePayload.crop(bufferedImage, bufferedImage.getHeight(), bufferedImage.getHeight());
-                        //Screenshot.grab(client.gameDirectory, client.getMainRenderTarget(), (text) -> {});
+                        debugCapture("crop/scale start");
+                        int[][] pixels = cropAndScaleToMapPixels(nativeImage.getPixels(), nativeImage.getWidth(), nativeImage.getHeight());
+                        debugCapture("crop/scale complete");
 
-                        // TODO Debug
-                        //System.out.println("bufferedImage: "+bufferedImage);
+                        debugCapture("map encode start");
+                        MapRenderer.render(pixels, Image2Map.DitherMode.FLOYD, id, mapState);
+                        debugCapture("map encode complete");
 
-                        //System.out.println("Printing nbtCompound from CreatePicturePayload: " + nbtCompound);
-                        MapItemSavedData mapState1 = MapRenderer.render(bufferedImage, Image2Map.DitherMode.FLOYD, id, mapState);
-                        //System.out.println("Printing nbtCompound from CreatePicturePayload after: " + nbtCompound);
+                        debugCapture("map save data serialization start");
+                        CompoundTag pictureNbt = PhotographyUtil.writeNbt(nbtCompound, mapState);
+                        debugCapture("map save data serialization complete");
 
-                        // TODO Debug
-                        //System.out.println("mapstate1: "+mapState1);
-
-                        SpawnPicturePayload payload = new SpawnPicturePayload(id, nbtCompound);
+                        SpawnPicturePayload payload = new SpawnPicturePayload(id, pictureNbt);
+                        debugCapture("sending spawn picture payload");
                         ClientPlayNetworking.send(payload);
+                        debugCapture("spawn picture payload sent");
 
-                        // TODO Debug
-                        //System.out.println("Cropping succeeded!");
-                        //System.out.println("payload: "+payload);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    } catch (RuntimeException e) {
+                        Photography.LOGGER.error("Photography capture failed while creating map {}", id, e);
+                    } finally {
+                        nativeImage.close();
                     }
                 }));
             });
         });
     }
 
-    public static BufferedImage crop(BufferedImage bufferedImage, int targetWidth, int targetHeight) throws IOException {
-        // TODO: This cropping system doesn't work when the image height is greater than the image width
-        //System.out.println("bufferedImage width: "+bufferedImage.getWidth() + " bufferedImage height: "+bufferedImage.getHeight());
+    private static int[][] cropAndScaleToMapPixels(int[] pixels, int width, int height) {
+        int cropSize = Math.min(width, height);
+        int cropX = (width - cropSize) / 2;
+        int cropY = (height - cropSize) / 2;
+        int[][] scaledPixels = new int[128][128];
 
-        int height = bufferedImage.getHeight();
-        int width = bufferedImage.getWidth();
-        // TODO Debug
-        //System.out.println("Height: "+height+" Width: "+width);
-
-        int xc = 0, yc = 0;
-
-        // Coordinates of the image's top-left corner
-        if (targetHeight > width) {
-            targetWidth = width;
-
-            xc = (targetWidth - width) / 2;
-            yc = (height - width) / 2;
-
-            targetHeight = width;
-
-        } else {
-            xc = (width - targetWidth) / 2;
-            yc = (height - targetHeight) / 2;
+        for (int y = 0; y < 128; y++) {
+            int sourceY = cropY + Math.min(cropSize - 1, y * cropSize / 128);
+            for (int x = 0; x < 128; x++) {
+                int sourceX = cropX + Math.min(cropSize - 1, x * cropSize / 128);
+                scaledPixels[y][x] = pixels[sourceX + sourceY * width];
+            }
         }
-        // TODO Debug
-        //System.out.println("xc: "+xc+" yc: "+yc);
 
-        // Crop
-        BufferedImage croppedImage = bufferedImage.getSubimage(
-                xc,
-                yc,
-                targetWidth, // width
-                targetHeight // height
-        );
-        // TODO Debug
-        //System.out.println("croppedImage: "+croppedImage);
+        return scaledPixels;
+    }
 
-        return croppedImage;
+    private static void debugCapture(String message, Object... args) {
+        if (DEBUG_CAPTURE) {
+            Photography.LOGGER.info("[capture] " + message, args);
+        }
     }
 }
