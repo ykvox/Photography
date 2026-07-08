@@ -1,5 +1,6 @@
 package net.blouflin.photography.networking;
 
+import net.blouflin.photography.PhotographyArchive;
 import net.blouflin.photography.PhotographyUtil;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -44,6 +45,7 @@ public record SpawnPicturePayload(Integer id, CompoundTag nbtCompound) implement
             stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(List.of(56776F), List.of(), List.of(), List.of()));
             stack.set(DataComponents.ITEM_NAME, Component.translatableWithFallback("photography:filled_map", "Photograph"));
 
+            boolean photoGranted = false;
             if(!player.isCreative()) {
                 // legacy item format support; TODO: remove later
                 ItemStack itemStack = new ItemStack(Items.FILLED_MAP);
@@ -70,32 +72,33 @@ public record SpawnPicturePayload(Integer id, CompoundTag nbtCompound) implement
                     slot = itemCheck2;
                 }
                 if(slot != -1) {
-                    convertStack(player, slot, stack);
+                    photoGranted = convertStack(player, slot, stack);
                 } else if (player.getItemInHand(InteractionHand.OFF_HAND).getItem() == itemStack.getItem()) { // required to decrement offhand
                     if (Objects.equals(player.getItemInHand(InteractionHand.OFF_HAND).getComponents().get(DataComponents.CUSTOM_DATA), itemStack.getComponents().get(DataComponents.CUSTOM_DATA))) {
-                        convertStack(player, 40, stack);
+                        photoGranted = convertStack(player, 40, stack);
                     }
                 }
             }
             else {
-                if (player.getInventory().add(stack)) {
-                    player.getInventory().add(stack);
-                } else {
-                    ItemEntity itemEntity = new ItemEntity(player.level(), player.position().x, player.position().y, player.position().z, stack);
-                    player.level().addFreshEntity(itemEntity);
-                }
+                photoGranted = addOrDropStack(player, stack);
+            }
+
+            if (photoGranted) {
+                PhotographyArchive.saveAsync(player, mapState);
             }
         });
     }
 
-    private static void convertStack(ServerPlayer player, int slot, ItemStack stack) {
+    private static boolean convertStack(ServerPlayer player, int slot, ItemStack stack) {
         player.getInventory().getItem(slot).shrink(1);
+        return addOrDropStack(player, stack);
+    }
 
-        if (player.getInventory().add(stack)) {
-            player.getInventory().add(stack);
-        } else {
+    private static boolean addOrDropStack(ServerPlayer player, ItemStack stack) {
+        if (!player.getInventory().add(stack)) {
             ItemEntity itemEntity = new ItemEntity(player.level(), player.position().x, player.position().y, player.position().z, stack);
             player.level().addFreshEntity(itemEntity);
         }
+        return true;
     }
 }

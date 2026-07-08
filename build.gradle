@@ -5,6 +5,13 @@ plugins {
 
 loom {
     accessWidenerPath = file("src/main/resources/photography.classtweaker")
+
+    runs {
+        configureEach {
+            vmArg "--enable-native-access=ALL-UNNAMED"
+            vmArg "--sun-misc-unsafe-memory-access=allow"
+        }
+    }
 }
 
 version = project.mod_version
