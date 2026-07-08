@@ -36,14 +36,14 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
 
             MapItemSavedData mapState = PhotographyUtil.fromNbt(nbtCompound);
 
-            PhotographyHud.CAMERA_SCOPE_TO_RENDER = PhotographyHud.CAMERA_SCOPE_CLEAR;
+            PhotographyHud.renderViewfinderMask = false;
 
             PhotographyHud.setScreenshotFuture(future);
 
             future.thenRun(() -> {
                 debugCapture("HUD frame completed; starting screenshot capture");
 
-                PhotographyHud.CAMERA_SCOPE_TO_RENDER = PhotographyHud.CAMERA_SCOPE;
+                PhotographyHud.renderViewfinderMask = true;
                 PhotographyHud.spyglassFlashOpacity = 1.0f;
                 PhotographyHud.isTakingPhoto = false;
 

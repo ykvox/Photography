@@ -1,12 +1,11 @@
 package net.blouflin.photography.mixin;
 
 import net.blouflin.photography.client.PhotographyHud;
+import net.blouflin.photography.PhotographyCamera;
 import net.blouflin.photography.networking.CreateMapStatePayload;
-import net.blouflin.photography.networking.SetUsingPhotographyCameraPayload;
 import net.blouflin.photography.player.PlayerIsUsingCamera;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.*;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.stats.Stats;
@@ -33,19 +32,16 @@ public abstract class SpyglassItemMixin {
 
         if (world.isClientSide()) {
 
-            boolean isPhotographyCamera = false;
-            String toContain = "isPhotographyCamera:1b";
             Minecraft client = Minecraft.getInstance();
-
-            if (user.getItemInHand(hand).getComponents().has(DataComponents.CUSTOM_DATA)) {
-                isPhotographyCamera = user.getItemInHand(hand).getComponents().get(DataComponents.CUSTOM_DATA).toString().contains(toContain);
-            }
+            boolean isPhotographyCamera = PhotographyCamera.isPhotographyCamera(user.getItemInHand(hand));
 
             if (isPhotographyCamera) {
+                PhotographyHud.debugViewfinder("camera item use ({})", hand);
                 if (client.options.getCameraType().isFirstPerson()) {
                     if (PhotographyHud.isUsingPhotographyCamera) {
                         if (Objects.equals(PhotographyHud.handUsingPhotographyCamera, hand.toString())) {
                             if (PhotographyHud.canTakePhoto) {
+                                PhotographyHud.debugViewfinder("shutter/capture requested");
                                 PhotographyHud.canTakePhoto = false;
                                 PhotographyHud.isTakingPhoto = true;
                                 CreateMapStatePayload payload = new CreateMapStatePayload();
@@ -53,15 +49,7 @@ public abstract class SpyglassItemMixin {
                             }
                         }
                     } else {
-                        PhotographyHud.zoomAmount = 1.0f;
-                        PhotographyHud.handUsingPhotographyCamera = hand.toString();
-                        PhotographyHud.defaultMouseSensitivity = client.options.sensitivity().get();
-                        PhotographyHud.isHUDhidden = client.gui.hud.isHidden();
-                        if (!client.gui.hud.isHidden()) { client.gui.hud.toggle(); }
-                        PhotographyHud.isUsingPhotographyCamera = true;
-                        user.playSound(SoundEvents.SPYGLASS_USE, 1.0f, 1.0f);
-                        SetUsingPhotographyCameraPayload payload = new SetUsingPhotographyCameraPayload(PhotographyHud.isUsingPhotographyCamera, PhotographyHud.handUsingPhotographyCamera);
-                        ClientPlayNetworking.send(payload);
+                        PhotographyHud.openViewfinder(hand);
                     }
                 }
             } else {
@@ -70,12 +58,7 @@ public abstract class SpyglassItemMixin {
                 cir.setReturnValue(ItemUtils.startUsingInstantly(world, user, hand));
             }
         } else {
-            boolean isPhotographyCamera = false;
-            String toContain = "isPhotographyCamera:1b";
-
-            if (user.getItemInHand(hand).getComponents().has(DataComponents.CUSTOM_DATA)) {
-                isPhotographyCamera = user.getItemInHand(hand).getComponents().get(DataComponents.CUSTOM_DATA).toString().contains(toContain);
-            }
+            boolean isPhotographyCamera = PhotographyCamera.isPhotographyCamera(user.getItemInHand(hand));
             if (!isPhotographyCamera) {
                 if (!((PlayerIsUsingCamera) user).isUsingPhotographyCamera()) {
                     user.playSound(SoundEvents.SPYGLASS_USE, 1.0f, 1.0f);

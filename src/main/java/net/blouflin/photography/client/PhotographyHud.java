@@ -1,12 +1,13 @@
 package net.blouflin.photography.client;
 
+import net.blouflin.photography.Photography;
+import net.blouflin.photography.PhotographyCamera;
 import net.blouflin.photography.networking.SetUsingPhotographyCameraPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.CommonColors;
@@ -21,43 +22,61 @@ public class PhotographyHud {
 
     public static boolean isUsingPhotographyCamera = false;
     public static float spyglassFlashOpacity = 0.0f;
-    public static float spyglassScale = 0.5f;
+    public static float viewfinderScale = 0.5f;
     public static boolean canTakePhoto = false;
     public static boolean isTakingPhoto = false;
     public static boolean isHUDhidden;
     public static String handUsingPhotographyCamera = InteractionHand.MAIN_HAND.name();
     public static double zoomAmount;
     public static double defaultMouseSensitivity;
-    public static final Identifier CAMERA_SCOPE = Identifier.fromNamespaceAndPath("photography","camera_scope"); // requires path of textures/gui/sprites/
-    public static final Identifier CAMERA_SCOPE_CLEAR = Identifier.fromNamespaceAndPath("photography","camera_scope_clear");
+    public static final Identifier VIEWFINDER_MASK = Identifier.fromNamespaceAndPath("photography","textures/gui/viewfinder/viewfinder.png");
     public static final Identifier CAMERA_SCOPE_FLASH = Identifier.fromNamespaceAndPath("photography","camera_scope_flash");
-    public static Identifier CAMERA_SCOPE_TO_RENDER = CAMERA_SCOPE;
+    public static boolean renderViewfinderMask = true;
     private static final Minecraft client = Minecraft.getInstance();
     private static final KeyMapping escapeKeybinding = new KeyMapping("key.keyboard.escape", GLFW.GLFW_KEY_ESCAPE, KeyMapping.Category.MISC);
+    private static final boolean DEBUG_VIEWFINDER = Boolean.getBoolean("photography.debugViewfinder");
+    private static boolean loggedOverlayRender;
 
     private static CompletableFuture<Void> screenshotFuture;
     public static void setScreenshotFuture(CompletableFuture<Void> future) {
         screenshotFuture = future;
     }
 
+    public static void openViewfinder(InteractionHand hand) {
+        zoomAmount = 1.0f;
+        handUsingPhotographyCamera = hand.toString();
+        defaultMouseSensitivity = client.options.sensitivity().get();
+        isHUDhidden = client.gui.hud.isHidden();
+        if (!client.gui.hud.isHidden()) { client.gui.hud.toggle(); }
+        isUsingPhotographyCamera = true;
+        renderViewfinderMask = true;
+        loggedOverlayRender = false;
+        debugViewfinder("viewfinder open ({})", handUsingPhotographyCamera);
+        if (client.player != null) {
+            client.player.playSound(SoundEvents.SPYGLASS_USE, 1.0f, 1.0f);
+        }
+        SetUsingPhotographyCameraPayload payload = new SetUsingPhotographyCameraPayload(isUsingPhotographyCamera, handUsingPhotographyCamera);
+        ClientPlayNetworking.send(payload);
+    }
+
     public static void renderPhotographyCameraOverlay(GuiGraphicsExtractor context) {
 
         float f = client.getDeltaTracker().getGameTimeDeltaTicks();
-        spyglassScale = Mth.lerp(0.5f * f, spyglassScale, 1.125f);
+        viewfinderScale = Mth.lerp(0.5f * f, viewfinderScale, 1.0f);
 
         if (client.options.getCameraType().isFirstPerson() && client.gui.screen() == null) {
             if (isTakingPhoto) {
-                CAMERA_SCOPE_TO_RENDER = CAMERA_SCOPE_CLEAR;
+                renderViewfinderMask = false;
             }
 
             if (!client.gui.hud.isHidden()) { client.gui.hud.toggle(); }
             checkIsPhotographyCameraOpen(client);
             if (!isHUDhidden) {
-                renderSpyglassOverlay(context, spyglassScale);
+                renderViewfinderOverlay(context, viewfinderScale);
             }
             spyglassFlashOpacity = Mth.lerp(0.1f * f, spyglassFlashOpacity, 0.0125f);
 
-            if (spyglassScale >= 1.1f && spyglassFlashOpacity <= 0.1f && !isTakingPhoto) {
+            if (viewfinderScale >= 0.98f && spyglassFlashOpacity <= 0.1f && !isTakingPhoto) {
                 canTakePhoto = true;
             } else {
                 canTakePhoto = false;
@@ -80,23 +99,24 @@ public class PhotographyHud {
         client.options.sensitivity().set(defaultMouseSensitivity);
         if (client.gui.hud.isHidden() != isHUDhidden) { client.gui.hud.toggle(); }
         spyglassFlashOpacity = 0.0f;
-        spyglassScale = 0.5f;
+        viewfinderScale = 0.5f;
         canTakePhoto = false;
         zoomAmount = 1.0f;
         PhotographyHud.isUsingPhotographyCamera = false;
-        client.player.playSound(SoundEvents.SPYGLASS_STOP_USING, 1.0f, 1.0f);
+        renderViewfinderMask = true;
+        loggedOverlayRender = false;
+        debugViewfinder("viewfinder close");
+        if (client.player != null) {
+            client.player.playSound(SoundEvents.SPYGLASS_STOP_USING, 1.0f, 1.0f);
+        }
         SetUsingPhotographyCameraPayload payload = new SetUsingPhotographyCameraPayload(isUsingPhotographyCamera, handUsingPhotographyCamera);
         ClientPlayNetworking.send(payload);
     }
 
     public static void checkIsPhotographyCameraOpen(Minecraft client) {
-        boolean isPhotographyCamera = false;
-        String toContain = "isPhotographyCamera:1b";
         Player player = client.player;
         InteractionHand hand = InteractionHand.valueOf(handUsingPhotographyCamera);
-        if (player.getItemInHand(hand).getComponents().has(DataComponents.CUSTOM_DATA)) {
-            isPhotographyCamera = player.getItemInHand(hand).getComponents().get(DataComponents.CUSTOM_DATA).toString().contains(toContain);
-        }
+        boolean isPhotographyCamera = player != null && PhotographyCamera.isPhotographyCamera(player.getItemInHand(hand));
         if (!isPhotographyCamera) {
             if (PhotographyHud.isUsingPhotographyCamera) {
                 stopRenderPhotographyCameraOverlay();
@@ -104,7 +124,12 @@ public class PhotographyHud {
         }
     }
 
-    private static void renderSpyglassOverlay(GuiGraphicsExtractor context, float scale) {
+    private static void renderViewfinderOverlay(GuiGraphicsExtractor context, float scale) {
+        if (!loggedOverlayRender) {
+            debugViewfinder("overlay render active");
+            loggedOverlayRender = true;
+        }
+
         float f;
         float g = f = (float)Math.min(context.guiWidth(), context.guiHeight());
         float h = Math.min((float)context.guiWidth() / f, (float)context.guiHeight() / g) * scale;
@@ -115,7 +140,9 @@ public class PhotographyHud {
         int m = k + i;
         int n = l + j;
 
-        context.blitSprite(RenderPipelines.GUI_TEXTURED, CAMERA_SCOPE_TO_RENDER, k, l, i, j);
+        if (renderViewfinderMask) {
+            context.blit(RenderPipelines.GUI_TEXTURED, VIEWFINDER_MASK, k, l, 0.0f, 0.0f, i, j, i, j);
+        }
 
         context.blitSprite(RenderPipelines.GUI_TEXTURED, CAMERA_SCOPE_FLASH, k, l, i, j, spyglassFlashOpacity);
 
@@ -126,5 +153,11 @@ public class PhotographyHud {
 
         //context.drawText(MinecraftClient.getInstance().textRenderer, "Hello, world!", k, l, 0xFFFFFFFF, false);
 
+    }
+
+    public static void debugViewfinder(String message, Object... args) {
+        if (DEBUG_VIEWFINDER) {
+            Photography.LOGGER.info("[viewfinder] " + message, args);
+        }
     }
 }
