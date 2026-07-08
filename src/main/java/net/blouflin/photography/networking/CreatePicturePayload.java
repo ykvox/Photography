@@ -108,6 +108,12 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
 
     private static int[][] scaleToMapPixels(int[] croppedPixels, int cropSize) {
         int[][] scaledPixels = new int[128][128];
+        int firstSourceY = sampleSourceCoordinate(0, cropSize, 128);
+        int lastSourceY = sampleSourceCoordinate(127, cropSize, 128);
+        int firstSourceX = sampleSourceCoordinate(0, cropSize, 128);
+        int lastSourceX = sampleSourceCoordinate(127, cropSize, 128);
+        PhotographyCaptureDebug.logSampleBounds("downscale x", cropSize, 128, firstSourceX, lastSourceX);
+        PhotographyCaptureDebug.logSampleBounds("downscale y", cropSize, 128, firstSourceY, lastSourceY);
 
         for (int y = 0; y < 128; y++) {
             int sourceY = sampleSourceCoordinate(y, cropSize, 128);

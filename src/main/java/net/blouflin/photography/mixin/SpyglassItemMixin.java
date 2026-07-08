@@ -37,13 +37,14 @@ public abstract class SpyglassItemMixin {
 
             if (isPhotographyCamera) {
                 PhotographyHud.debugViewfinder("camera item use ({})", hand);
-                if (client.options.getCameraType().isFirstPerson()) {
+                if (PhotographyHud.canUseViewfinderInCurrentPerspective()) {
                     if (PhotographyHud.isUsingPhotographyCamera) {
                         if (Objects.equals(PhotographyHud.handUsingPhotographyCamera, hand.toString())) {
                             if (user.isShiftKeyDown()) {
+                                PhotographyHud.debugViewfinder("shift+right-click detected");
                                 PhotographyHud.toggleCameraControls();
                             } else if (PhotographyHud.canTakePhoto) {
-                                PhotographyHud.debugViewfinder("shutter/capture requested");
+                                PhotographyHud.debugViewfinder(PhotographyHud.isSelfieEnabled() ? "selfie shutter requested" : "shutter/capture requested");
                                 PhotographyHud.canTakePhoto = false;
                                 PhotographyHud.isTakingPhoto = true;
                                 CreateMapStatePayload payload = new CreateMapStatePayload();

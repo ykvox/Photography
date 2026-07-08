@@ -11,6 +11,7 @@
   },
   "client": [
     "FovMultiplierMixin",
+    "CameraMixin",
     "KeyboardMixin",
     "MouseMixin",
     "PlayerEntityRendererMixin",

@@ -128,6 +128,14 @@ public class PhotographyHud {
         debugViewfinder("selfie toggled {}", selfieEnabled ? "on" : "off");
     }
 
+    public static boolean isSelfieEnabled() {
+        return selfieEnabled;
+    }
+
+    public static boolean canUseViewfinderInCurrentPerspective() {
+        return isViewfinderPerspective();
+    }
+
     public static void beginCaptureOverlaySuppression() {
         suppressViewfinderOverlayForCapture = true;
         renderViewfinderMask = false;
@@ -262,8 +270,7 @@ public class PhotographyHud {
         context.fill(RenderPipelines.GUI, 0, l, k, n, CommonColors.BLACK);
         context.fill(RenderPipelines.GUI, m, l, context.guiWidth(), n, CommonColors.BLACK);
 
-        //context.drawText(MinecraftClient.getInstance().textRenderer, "Hello, world!", k, l, 0xFFFFFFFF, false);
-
+        renderCameraControlsStrip(context, k, l, i, j);
     }
 
     private static void renderCompositionGuide(GuiGraphicsExtractor context, int x, int y, int width, int height) {
@@ -271,6 +278,35 @@ public class PhotographyHud {
         if (texture != null) {
             context.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0.0f, 0.0f, width, height, width, height);
         }
+    }
+
+    private static void renderCameraControlsStrip(GuiGraphicsExtractor context, int viewfinderX, int viewfinderY, int viewfinderWidth, int viewfinderHeight) {
+        if (!cameraControlsOpen) {
+            return;
+        }
+
+        int panelWidth = PhotographyCameraControlsScreen.PANEL_WIDTH;
+        int panelHeight = PhotographyCameraControlsScreen.PANEL_HEIGHT;
+        int panelX = (context.guiWidth() - panelWidth) / 2;
+        int panelY = Math.min(context.guiHeight() - panelHeight - 8, viewfinderY + viewfinderHeight - panelHeight - 18);
+        int background = 0xdd000000;
+        int foreground = 0xffffffff;
+
+        debugViewfinder("controls HUD render at x={}, y={}, w={}, h={}, gui={}x{}",
+                panelX, panelY, panelWidth, panelHeight, context.guiWidth(), context.guiHeight());
+
+        context.fill(RenderPipelines.GUI, panelX, panelY, panelX + panelWidth, panelY + panelHeight, background);
+        renderControlVisual(context, panelX + 16, panelY + 8, SETTINGS.compositionGuide().controlSprite(),
+                "C " + SETTINGS.compositionGuide().label(), foreground);
+        renderControlVisual(context, panelX + 76, panelY + 8, SETTINGS.selfTimer().controlSprite(),
+                "T " + SETTINGS.selfTimer().label(), foreground);
+        renderControlVisual(context, panelX + 136, panelY + 8, SETTINGS.shutterSpeed().controlSprite(),
+                "S " + SETTINGS.shutterSpeed().label(), foreground);
+    }
+
+    private static void renderControlVisual(GuiGraphicsExtractor context, int x, int y, Identifier sprite, String label, int color) {
+        context.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, PhotographyCameraControlsScreen.BUTTON_SIZE, PhotographyCameraControlsScreen.BUTTON_SIZE);
+        context.text(client.font, label, x - 10, y + 22, color, false);
     }
 
     public static void debugViewfinder(String message, Object... args) {

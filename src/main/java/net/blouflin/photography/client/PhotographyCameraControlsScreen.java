@@ -12,10 +12,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 public class PhotographyCameraControlsScreen extends Screen {
-    private static final int BUTTON_SIZE = 18;
-    private static final int BUTTON_GAP = 4;
-    private static final int PANEL_WIDTH = 170;
-    private static final int PANEL_HEIGHT = 46;
+    public static final int BUTTON_SIZE = 18;
+    public static final int PANEL_WIDTH = 170;
+    public static final int PANEL_HEIGHT = 46;
 
     private int leftPos;
     private int topPos;
@@ -49,6 +48,8 @@ public class PhotographyCameraControlsScreen extends Screen {
 
         leftPos = (width - PANEL_WIDTH) / 2;
         topPos = Math.max(12, height - 82);
+        PhotographyHud.debugViewfinder("controls screen init gui={}x{}, panel x={}, y={}, w={}, h={}",
+                width, height, leftPos, topPos, PANEL_WIDTH, PANEL_HEIGHT);
 
         addRenderableWidget(createImageButton(
                 leftPos + 16,
@@ -56,6 +57,7 @@ public class PhotographyCameraControlsScreen extends Screen {
                 PhotographyHud.SETTINGS.compositionGuide().controlSprite(),
                 Component.literal("Composition: " + PhotographyHud.SETTINGS.compositionGuide().label()),
                 button -> {
+                    PhotographyHud.debugViewfinder("controls composition button clicked");
                     PhotographyHud.cycleCompositionGuide();
                     rebuildWidgets();
                 }));
@@ -66,6 +68,7 @@ public class PhotographyCameraControlsScreen extends Screen {
                 PhotographyHud.SETTINGS.selfTimer().controlSprite(),
                 Component.literal("Timer: " + PhotographyHud.SETTINGS.selfTimer().label()),
                 button -> {
+                    PhotographyHud.debugViewfinder("controls timer button clicked");
                     PhotographyHud.cycleSelfTimer();
                     rebuildWidgets();
                 }));
@@ -76,6 +79,7 @@ public class PhotographyCameraControlsScreen extends Screen {
                 PhotographyHud.SETTINGS.shutterSpeed().controlSprite(),
                 Component.literal("Shutter: " + PhotographyHud.SETTINGS.shutterSpeed().label()),
                 button -> {
+                    PhotographyHud.debugViewfinder("controls shutter button clicked");
                     PhotographyHud.cycleShutterSpeed();
                     rebuildWidgets();
                 }));
@@ -87,6 +91,7 @@ public class PhotographyCameraControlsScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float partialTick) {
+        PhotographyHud.debugViewfinder("controls screen render called");
         int background = 0xaa000000;
         int foreground = 0xffffffff;
 
@@ -129,6 +134,7 @@ public class PhotographyCameraControlsScreen extends Screen {
     }
 
     private ImageButton createImageButton(int x, int y, Identifier sprite, Component tooltip, net.minecraft.client.gui.components.Button.OnPress onPress) {
+        PhotographyHud.debugViewfinder("controls widget created at x={}, y={}, w={}, h={}, sprite={}", x, y, BUTTON_SIZE, BUTTON_SIZE, sprite);
         ImageButton button = new ImageButton(x, y, BUTTON_SIZE, BUTTON_SIZE, new WidgetSprites(sprite), onPress, tooltip);
         button.setTooltip(Tooltip.create(tooltip));
         return button;
