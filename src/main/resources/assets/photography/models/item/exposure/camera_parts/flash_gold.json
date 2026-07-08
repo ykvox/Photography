@@ -1,0 +1,7 @@
+{
+	"parent": "photography:item/exposure/camera_parts/flash",
+	"textures": {
+		"texture": "photography:item/exposure/camera/flash_gold",
+		"particle": "photography:item/exposure/camera/flash_gold"
+	}
+}

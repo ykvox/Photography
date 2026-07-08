@@ -1,0 +1,7 @@
+{
+	"parent": "photography:item/exposure/camera_selfie",
+	"textures": {
+		"texture": "photography:item/exposure/camera/camera_gold",
+		"particle": "photography:item/exposure/camera/camera_gold"
+	}
+}

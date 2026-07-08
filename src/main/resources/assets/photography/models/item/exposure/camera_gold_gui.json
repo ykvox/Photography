@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "photography:item/exposure/camera/camera_gui_gold"
+  },
+  "gui_light": "front"
+}

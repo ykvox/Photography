@@ -1,0 +1,7 @@
+{
+	"parent": "photography:item/exposure/camera_parts/viewfinder",
+	"textures": {
+		"texture": "photography:item/exposure/camera/viewfinder_gold",
+		"particle": "photography:item/exposure/camera/viewfinder_gold"
+	}
+}

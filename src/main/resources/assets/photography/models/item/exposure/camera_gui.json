@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "photography:item/exposure/camera/camera_gui"
+  },
+  "gui_light": "front",
+  "overrides": [
+    {
+      "predicate": {
+        "photography:camera_gold": 1
+      },
+      "model": "photography:item/exposure/camera_gold_gui"
+    }
+  ]
+}
