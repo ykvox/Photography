@@ -15,12 +15,27 @@ public class KeyboardMixin {
     @Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
     private void injected(long window, int action, KeyEvent input, CallbackInfo ci) {
         if (PhotographyHud.isUsingPhotographyCamera) {
-            if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
-                PhotographyHud.isUsingPhotographyCamera = false;
-                PhotographyHud.stopRenderPhotographyCameraOverlay();
+            if (input.key() == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
+                if (PhotographyHud.cameraControlsOpen) {
+                    PhotographyHud.toggleCameraControls();
+                } else {
+                    PhotographyHud.isUsingPhotographyCamera = false;
+                    PhotographyHud.stopRenderPhotographyCameraOverlay();
+                }
                 ci.cancel();
             } else if (input.key() == GLFW.GLFW_KEY_F1) {
                 ci.cancel();
+            } else if (PhotographyHud.cameraControlsOpen && action == GLFW.GLFW_PRESS) {
+                if (input.key() == GLFW.GLFW_KEY_C) {
+                    PhotographyHud.cycleCompositionGuide();
+                    ci.cancel();
+                } else if (input.key() == GLFW.GLFW_KEY_T) {
+                    PhotographyHud.cycleSelfTimer();
+                    ci.cancel();
+                } else if (input.key() == GLFW.GLFW_KEY_S) {
+                    PhotographyHud.cycleShutterSpeed();
+                    ci.cancel();
+                }
             }
         }
     }

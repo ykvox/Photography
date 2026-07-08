@@ -40,7 +40,9 @@ public abstract class SpyglassItemMixin {
                 if (client.options.getCameraType().isFirstPerson()) {
                     if (PhotographyHud.isUsingPhotographyCamera) {
                         if (Objects.equals(PhotographyHud.handUsingPhotographyCamera, hand.toString())) {
-                            if (PhotographyHud.canTakePhoto) {
+                            if (user.isShiftKeyDown()) {
+                                PhotographyHud.toggleCameraControls();
+                            } else if (PhotographyHud.canTakePhoto) {
                                 PhotographyHud.debugViewfinder("shutter/capture requested");
                                 PhotographyHud.canTakePhoto = false;
                                 PhotographyHud.isTakingPhoto = true;

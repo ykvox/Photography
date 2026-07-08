@@ -36,43 +36,45 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
 
             MapItemSavedData mapState = PhotographyUtil.fromNbt(nbtCompound);
 
-            PhotographyHud.renderViewfinderMask = false;
-
-            PhotographyHud.setScreenshotFuture(future);
+            PhotographyHud.beginCaptureOverlaySuppression();
+            PhotographyHud.requestCleanCaptureFrame(future);
 
             future.thenRun(() -> {
                 debugCapture("HUD frame completed; starting screenshot capture");
+                client.execute(() -> {
+                    PhotographyHud.debugViewfinder("screenshot readback start");
 
-                PhotographyHud.renderViewfinderMask = true;
-                PhotographyHud.spyglassFlashOpacity = 1.0f;
-                PhotographyHud.isTakingPhoto = false;
+                    Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(), (nativeImage -> {
+                        debugCapture("screenshot captured: {}x{}", nativeImage.getWidth(), nativeImage.getHeight());
+                        PhotographyHud.debugViewfinder("screenshot readback end");
+                        try {
+                            debugCapture("crop/scale start");
+                            int[][] pixels = cropAndScaleToMapPixels(nativeImage.getPixels(), nativeImage.getWidth(), nativeImage.getHeight());
+                            debugCapture("crop/scale complete");
 
-                Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(), (nativeImage -> {
-                    debugCapture("screenshot captured: {}x{}", nativeImage.getWidth(), nativeImage.getHeight());
-                    try {
-                        debugCapture("crop/scale start");
-                        int[][] pixels = cropAndScaleToMapPixels(nativeImage.getPixels(), nativeImage.getWidth(), nativeImage.getHeight());
-                        debugCapture("crop/scale complete");
+                            debugCapture("map encode start");
+                            MapRenderer.render(pixels, Image2Map.DitherMode.FLOYD, id, mapState);
+                            debugCapture("map encode complete");
 
-                        debugCapture("map encode start");
-                        MapRenderer.render(pixels, Image2Map.DitherMode.FLOYD, id, mapState);
-                        debugCapture("map encode complete");
+                            debugCapture("map save data serialization start");
+                            CompoundTag pictureNbt = PhotographyUtil.writeNbt(nbtCompound, mapState);
+                            debugCapture("map save data serialization complete");
 
-                        debugCapture("map save data serialization start");
-                        CompoundTag pictureNbt = PhotographyUtil.writeNbt(nbtCompound, mapState);
-                        debugCapture("map save data serialization complete");
+                            SpawnPicturePayload payload = new SpawnPicturePayload(id, pictureNbt);
+                            debugCapture("sending spawn picture payload");
+                            ClientPlayNetworking.send(payload);
+                            debugCapture("spawn picture payload sent");
 
-                        SpawnPicturePayload payload = new SpawnPicturePayload(id, pictureNbt);
-                        debugCapture("sending spawn picture payload");
-                        ClientPlayNetworking.send(payload);
-                        debugCapture("spawn picture payload sent");
-
-                    } catch (RuntimeException e) {
-                        Photography.LOGGER.error("Photography capture failed while creating map {}", id, e);
-                    } finally {
-                        nativeImage.close();
-                    }
-                }));
+                        } catch (RuntimeException e) {
+                            Photography.LOGGER.error("Photography capture failed while creating map {}", id, e);
+                        } finally {
+                            PhotographyHud.restoreOverlayAfterCapture();
+                            PhotographyHud.spyglassFlashOpacity = 1.0f;
+                            PhotographyHud.isTakingPhoto = false;
+                            nativeImage.close();
+                        }
+                    }));
+                });
             });
         });
     }
