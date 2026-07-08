@@ -8,11 +8,24 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public final class PhotographyCaptureDebug {
     public static final boolean DEBUG_CAPTURE_IMAGES = Boolean.getBoolean("photography.debugCaptureImages");
+    private static boolean loggedCaptureDiagnosticsDisabled;
+    private static final Map<String, StageEdgeStats> STAGE_EDGE_STATS = new LinkedHashMap<>();
 
     private PhotographyCaptureDebug() {
+    }
+
+    public static void logCaptureStart() {
+        if (DEBUG_CAPTURE_IMAGES) {
+            Photography.LOGGER.info("[PhotographyDebug] capture diagnostics enabled; writing to {}", debugDirectory());
+        } else if (!loggedCaptureDiagnosticsDisabled) {
+            loggedCaptureDiagnosticsDisabled = true;
+            Photography.LOGGER.info("[PhotographyDebug] capture diagnostics disabled; enable -Dphotography.debugCaptureImages=true");
+        }
     }
 
     public static void writeArgb(String stage, int[] pixels, int width, int height) {
@@ -48,6 +61,28 @@ public final class PhotographyCaptureDebug {
         writeArgb(stage, pixels, size, size);
     }
 
+    public static void identifyLikelyBlackEdgeSource() {
+        if (!DEBUG_CAPTURE_IMAGES) {
+            return;
+        }
+
+        String likelyStage = "unknown";
+        double highestBottomBlackRatio = 0.0d;
+        for (Map.Entry<String, StageEdgeStats> entry : STAGE_EDGE_STATS.entrySet()) {
+            double ratio = entry.getValue().bottom.blackRatio();
+            if (ratio > highestBottomBlackRatio) {
+                highestBottomBlackRatio = ratio;
+                likelyStage = entry.getKey();
+            }
+        }
+
+        String reason = highestBottomBlackRatio > 0.25d
+                ? "bottom edge contains many black pixels"
+                : "no stage has a strongly black bottom edge; inspect PNGs for color/alpha artifact";
+        Photography.LOGGER.info("[PhotographyDebug] black-edge source stage={} likely cause={} bottomBlackRatio={}",
+                likelyStage, reason, highestBottomBlackRatio);
+    }
+
     public static void logSampleBounds(String stage, int sourceSize, int destinationSize, int firstSource, int lastSource) {
         if (!DEBUG_CAPTURE_IMAGES) {
             return;
@@ -57,11 +92,21 @@ public final class PhotographyCaptureDebug {
                 stage, sourceSize, destinationSize, firstSource, lastSource);
     }
 
+    public static void logCropSource(int cropX, int cropY, int cropSize, int framebufferWidth, int framebufferHeight) {
+        if (!DEBUG_CAPTURE_IMAGES) {
+            return;
+        }
+
+        Photography.LOGGER.info("[capture-images] crop source: x={}, y={}, size={}, framebuffer={}x{}",
+                cropX, cropY, cropSize, framebufferWidth, framebufferHeight);
+    }
+
     private static void logEdgeStats(String stage, int[] pixels, int width, int height) {
         EdgeStats top = analyzeHorizontalEdge(pixels, width, 0);
         EdgeStats bottom = analyzeHorizontalEdge(pixels, width, height - 1);
         EdgeStats left = analyzeVerticalEdge(pixels, width, height, 0);
         EdgeStats right = analyzeVerticalEdge(pixels, width, height, width - 1);
+        STAGE_EDGE_STATS.put(stage, new StageEdgeStats(top, bottom, left, right));
 
         Photography.LOGGER.info("[capture-images] {} edge stats: top={}, bottom={}, left={}, right={}, size={}x{}",
                 stage, top, bottom, left, right, width, height);
@@ -106,6 +151,13 @@ public final class PhotographyCaptureDebug {
             }
         }
 
+        private double blackRatio() {
+            if (total == 0) {
+                return 0.0d;
+            }
+            return (double) black / (double) total;
+        }
+
         @Override
         public String toString() {
             return "black=" + black + "/" + total
@@ -114,7 +166,10 @@ public final class PhotographyCaptureDebug {
         }
     }
 
-    private static Path debugDirectory() {
+    private record StageEdgeStats(EdgeStats top, EdgeStats bottom, EdgeStats left, EdgeStats right) {
+    }
+
+    public static Path debugDirectory() {
         Minecraft client = Minecraft.getInstance();
         return client.gameDirectory.toPath().resolve("photography_debug");
     }

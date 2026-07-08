@@ -9,14 +9,18 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.CommonColors;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomModelData;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class PhotographyHud {
@@ -42,6 +46,10 @@ public class PhotographyHud {
     private static boolean loggedOverlayRender;
     private static CameraType previousCameraType;
     private static boolean selfieEnabled;
+    private static long lastControlsHudDebugTick = -1000L;
+    private static int controlsPanelX;
+    private static int controlsPanelY;
+    private static boolean controlsPanelPositionKnown;
 
     private static CompletableFuture<Void> screenshotFuture;
     public static void setScreenshotFuture(CompletableFuture<Void> future) {
@@ -56,11 +64,13 @@ public class PhotographyHud {
         previousCameraType = client.options.getCameraType();
         selfieEnabled = false;
         debugViewfinder("previous perspective stored: {}", previousCameraType);
+        applyCameraModelState(false);
         if (!client.gui.hud.isHidden()) { client.gui.hud.toggle(); }
         isUsingPhotographyCamera = true;
         renderViewfinderMask = true;
         suppressViewfinderOverlayForCapture = false;
         cameraControlsOpen = false;
+        controlsPanelPositionKnown = false;
         loggedOverlayRender = false;
         debugViewfinder("viewfinder open ({})", handUsingPhotographyCamera);
         if (client.player != null) {
@@ -86,6 +96,7 @@ public class PhotographyHud {
         cameraControlsOpen = true;
         debugViewfinder("controls opened");
         client.setScreenAndShow(new PhotographyCameraControlsScreen());
+        debugViewfinder("controls screen set/opened; current screen={}", client.gui.screen() == null ? "null" : client.gui.screen().getClass().getName());
     }
 
     public static void closeCameraControls() {
@@ -125,6 +136,7 @@ public class PhotographyHud {
 
         selfieEnabled = !selfieEnabled;
         client.options.setCameraType(selfieEnabled ? CameraType.THIRD_PERSON_FRONT : CameraType.FIRST_PERSON);
+        applyCameraModelState(selfieEnabled);
         debugViewfinder("selfie toggled {}", selfieEnabled ? "on" : "off");
     }
 
@@ -203,6 +215,7 @@ public class PhotographyHud {
         renderViewfinderMask = true;
         suppressViewfinderOverlayForCapture = false;
         cameraControlsOpen = false;
+        controlsPanelPositionKnown = false;
         loggedOverlayRender = false;
         restorePreviousPerspective();
         debugViewfinder("viewfinder close");
@@ -225,6 +238,24 @@ public class PhotographyHud {
             previousCameraType = null;
         }
         selfieEnabled = false;
+        applyCameraModelState(false);
+    }
+
+    private static void applyCameraModelState(boolean selfieModel) {
+        Player player = client.player;
+        if (player == null) {
+            return;
+        }
+
+        InteractionHand hand = InteractionHand.valueOf(handUsingPhotographyCamera);
+        ItemStack stack = player.getItemInHand(hand);
+        if (!PhotographyCamera.isPhotographyCamera(stack)) {
+            return;
+        }
+
+        float customModelData = selfieModel ? 56777F : 56774F;
+        stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(List.of(customModelData), List.of(), List.of(), List.of()));
+        debugViewfinder("camera model state set to {}", selfieModel ? "selfie" : "normal");
     }
 
     public static void checkIsPhotographyCameraOpen(Minecraft client) {
@@ -289,19 +320,57 @@ public class PhotographyHud {
         int panelHeight = PhotographyCameraControlsScreen.PANEL_HEIGHT;
         int panelX = (context.guiWidth() - panelWidth) / 2;
         int panelY = Math.min(context.guiHeight() - panelHeight - 8, viewfinderY + viewfinderHeight - panelHeight - 18);
+        controlsPanelX = panelX;
+        controlsPanelY = panelY;
+        controlsPanelPositionKnown = true;
         int background = 0xdd000000;
         int foreground = 0xffffffff;
 
-        debugViewfinder("controls HUD render at x={}, y={}, w={}, h={}, gui={}x{}",
-                panelX, panelY, panelWidth, panelHeight, context.guiWidth(), context.guiHeight());
+        long gameTime = client.level == null ? 0L : client.level.getGameTime();
+        if (gameTime - lastControlsHudDebugTick >= 30L) {
+            lastControlsHudDebugTick = gameTime;
+            debugViewfinder("controls HUD strip render called x={}, y={}, w={}, h={}, gui={}x{}",
+                    panelX, panelY, panelWidth, panelHeight, context.guiWidth(), context.guiHeight());
+        }
 
         context.fill(RenderPipelines.GUI, panelX, panelY, panelX + panelWidth, panelY + panelHeight, background);
+        context.text(client.font, "GUIDE: " + SETTINGS.compositionGuide().label(), panelX + 6, panelY + 5, foreground, false);
+        context.text(client.font, "TIMER: " + SETTINGS.selfTimer().label(), panelX + 6, panelY + 18, foreground, false);
+        context.text(client.font, "SHUTTER: " + SETTINGS.shutterSpeed().label(), panelX + 78, panelY + 18, foreground, false);
         renderControlVisual(context, panelX + 16, panelY + 8, SETTINGS.compositionGuide().controlSprite(),
                 "C " + SETTINGS.compositionGuide().label(), foreground);
         renderControlVisual(context, panelX + 76, panelY + 8, SETTINGS.selfTimer().controlSprite(),
                 "T " + SETTINGS.selfTimer().label(), foreground);
         renderControlVisual(context, panelX + 136, panelY + 8, SETTINGS.shutterSpeed().controlSprite(),
                 "S " + SETTINGS.shutterSpeed().label(), foreground);
+    }
+
+    public static boolean handleControlsClick(double guiX, double guiY) {
+        if (!cameraControlsOpen || !controlsPanelPositionKnown) {
+            return false;
+        }
+
+        if (isInside(guiX, guiY, controlsPanelX + 16, controlsPanelY + 8, PhotographyCameraControlsScreen.BUTTON_SIZE, PhotographyCameraControlsScreen.BUTTON_SIZE)) {
+            debugViewfinder("controls HUD composition hit at {}, {}", guiX, guiY);
+            cycleCompositionGuide();
+            return true;
+        }
+        if (isInside(guiX, guiY, controlsPanelX + 76, controlsPanelY + 8, PhotographyCameraControlsScreen.BUTTON_SIZE, PhotographyCameraControlsScreen.BUTTON_SIZE)) {
+            debugViewfinder("controls HUD timer hit at {}, {}", guiX, guiY);
+            cycleSelfTimer();
+            return true;
+        }
+        if (isInside(guiX, guiY, controlsPanelX + 136, controlsPanelY + 8, PhotographyCameraControlsScreen.BUTTON_SIZE, PhotographyCameraControlsScreen.BUTTON_SIZE)) {
+            debugViewfinder("controls HUD shutter hit at {}, {}", guiX, guiY);
+            cycleShutterSpeed();
+            return true;
+        }
+
+        return false;
+    }
+
+    private static boolean isInside(double guiX, double guiY, int x, int y, int width, int height) {
+        return guiX >= x && guiX < x + width && guiY >= y && guiY < y + height;
     }
 
     private static void renderControlVisual(GuiGraphicsExtractor context, int x, int y, Identifier sprite, String label, int color) {
@@ -313,5 +382,9 @@ public class PhotographyHud {
         if (DEBUG_VIEWFINDER) {
             Photography.LOGGER.info("[viewfinder] " + message, args);
         }
+    }
+
+    public static boolean isDebugViewfinderEnabled() {
+        return DEBUG_VIEWFINDER;
     }
 }

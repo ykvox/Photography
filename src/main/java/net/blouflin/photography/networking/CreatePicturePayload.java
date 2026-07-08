@@ -34,6 +34,7 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
 
         client.execute(() -> {
             debugCapture("preparing HUD for capture");
+            PhotographyCaptureDebug.logCaptureStart();
 
             MapItemSavedData mapState = PhotographyUtil.fromNbt(nbtCompound);
 
@@ -63,6 +64,7 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
                             debugCapture("map encode start");
                             MapRenderer.render(pixels, Image2Map.DitherMode.FLOYD, id, mapState);
                             PhotographyCaptureDebug.writeMapColors("04_map_colors_after_dither", mapState);
+                            PhotographyCaptureDebug.identifyLikelyBlackEdgeSource();
                             debugCapture("map encode complete");
 
                             debugCapture("map save data serialization start");
@@ -102,6 +104,7 @@ public record CreatePicturePayload(Integer id, CompoundTag nbtCompound) implemen
             }
         }
 
+        PhotographyCaptureDebug.logCropSource(cropX, cropY, cropSize, width, height);
         debugCapture("crop source: x={}, y={}, size={}, framebuffer={}x{}", cropX, cropY, cropSize, width, height);
         return new CroppedImage(croppedPixels, cropSize);
     }

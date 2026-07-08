@@ -47,7 +47,7 @@ public class PhotographyCameraControlsScreen extends Screen {
         refreshMovementKeys();
 
         leftPos = (width - PANEL_WIDTH) / 2;
-        topPos = Math.max(12, height - 82);
+        topPos = Math.max(12, height - PANEL_HEIGHT - 8);
         PhotographyHud.debugViewfinder("controls screen init gui={}x{}, panel x={}, y={}, w={}, h={}",
                 width, height, leftPos, topPos, PANEL_WIDTH, PANEL_HEIGHT);
 

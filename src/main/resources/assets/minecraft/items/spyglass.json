@@ -8,7 +8,14 @@
         "threshold": 56774,
         "model":{
           "type": "minecraft:model",
-          "model": "photography:item/camera"
+          "model": "photography:item/exposure/camera"
+        }
+      },
+      {
+        "threshold": 56777,
+        "model":{
+          "type": "minecraft:model",
+          "model": "photography:item/exposure/camera_selfie"
         }
       }
     ],
@@ -45,7 +52,7 @@
           ],
           "model":{
             "type": "minecraft:model",
-            "model": "photography:item/camera"
+            "model": "photography:item/exposure/camera"
           }
         }
       ]

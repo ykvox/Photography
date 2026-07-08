@@ -1,6 +1,7 @@
 package net.blouflin.photography;
 
 import net.blouflin.photography.client.PhotographyHud;
+import net.blouflin.photography.client.PhotographyCaptureDebug;
 import net.blouflin.photography.networking.CreatePicturePayload;
 import net.blouflin.photography.networking.GetUsingPhotographyCameraPayload;
 import net.blouflin.photography.networking.PlayCameraShutterSoundPayload;
@@ -34,6 +35,8 @@ public class PhotographyClient implements ClientModInitializer {
     public void onInitializeClient() {
 
         Registry.register(BuiltInRegistries.SOUND_EVENT, CAMERA_SHUTTER_SOUND, CAMERA_SHUTTER);
+        Photography.LOGGER.info("[PhotographyDebug] debugCaptureImages={}", PhotographyCaptureDebug.DEBUG_CAPTURE_IMAGES);
+        Photography.LOGGER.info("[PhotographyDebug] debugViewfinder={}", PhotographyHud.isDebugViewfinderEnabled());
 
         ClientPlayNetworking.registerGlobalReceiver(CreatePicturePayload.ID, (payload, handler) -> CreatePicturePayload.receive(handler.client(), payload.id(), payload.nbtCompound()));
         ClientPlayNetworking.registerGlobalReceiver(GetUsingPhotographyCameraPayload.ID, (payload, handler) -> GetUsingPhotographyCameraPayload.receive(handler.client(), payload.player(), payload.isUsingPhotographyCamera(), payload.handUsingPhotographyCamera()));
