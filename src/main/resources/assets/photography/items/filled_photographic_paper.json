@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "photography:item/filled_photographic_paper"
+  }
+}

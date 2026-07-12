@@ -1,0 +1,12 @@
+{
+  "match": {
+    "items": "minecraft:spyglass",
+    "components": {
+      "minecraft:custom_data": {
+        "isPhotographyCamera": true,
+        "photographyFlashActive": true
+      }
+    }
+  },
+  "luminance": 15
+}
