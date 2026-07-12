@@ -67,6 +67,30 @@ public final class PhotographyArchive {
         }, ARCHIVE_EXECUTOR);
     }
 
+    public static void saveArgbAsync(ServerPlayer player, int[] pixels, int width, int height) {
+        if (!SERVER_ARCHIVE_ENABLED) {
+            return;
+        }
+
+        MinecraftServer server = player.level().getServer();
+        Path archiveDirectory = resolveArchiveDirectory(server);
+        String baseFileName = createBaseFileName(player.getGameProfile().name(), LocalDateTime.now());
+        int[] pixelsCopy = Arrays.copyOf(pixels, pixels.length);
+        String playerName = player.getGameProfile().name();
+
+        Photography.LOGGER.info("Starting archival save of {}x{} photo for {} in {}", width, height, playerName, archiveDirectory);
+        CompletableFuture.runAsync(() -> {
+            try {
+                Files.createDirectories(archiveDirectory);
+                byte[] png = PngWriter.encodeArgb(pixelsCopy, width, height);
+                Path outputPath = writeWithUniqueName(archiveDirectory, baseFileName, png);
+                Photography.LOGGER.info("Saved archival {}x{} photo for {} to {}", width, height, playerName, outputPath);
+            } catch (Exception e) {
+                Photography.LOGGER.error("Failed to save archival {}x{} photo for {} in {}", width, height, playerName, archiveDirectory, e);
+            }
+        }, ARCHIVE_EXECUTOR);
+    }
+
     private static Path resolveArchiveDirectory(MinecraftServer server) {
         Path configuredPath = Path.of(SERVER_ARCHIVE_FOLDER);
         if (configuredPath.isAbsolute()) {

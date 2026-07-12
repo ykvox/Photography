@@ -2,9 +2,7 @@ package net.blouflin.photography.mixin;
 
 import net.blouflin.photography.client.PhotographyHud;
 import net.blouflin.photography.PhotographyCamera;
-import net.blouflin.photography.networking.CreateMapStatePayload;
 import net.blouflin.photography.player.PlayerIsUsingCamera;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.*;
 import net.minecraft.sounds.SoundEvents;
@@ -20,8 +18,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.Objects;
 
 @Mixin(SpyglassItem.class)
 public abstract class SpyglassItemMixin {
@@ -39,22 +35,13 @@ public abstract class SpyglassItemMixin {
                 PhotographyHud.debugViewfinder("camera item use ({})", hand);
                 if (PhotographyHud.canUseViewfinderInCurrentPerspective()) {
                     if (PhotographyHud.isUsingPhotographyCamera) {
-                        if (Objects.equals(PhotographyHud.handUsingPhotographyCamera, hand.toString())) {
-                            if (user.isShiftKeyDown()) {
-                                PhotographyHud.debugViewfinder("shift+right-click detected");
-                                PhotographyHud.toggleCameraControls();
-                            } else if (PhotographyHud.canTakePhoto) {
-                                PhotographyHud.debugViewfinder(PhotographyHud.isSelfieEnabled() ? "selfie shutter requested" : "shutter/capture requested");
-                                PhotographyHud.canTakePhoto = false;
-                                PhotographyHud.isTakingPhoto = true;
-                                CreateMapStatePayload payload = new CreateMapStatePayload();
-                                ClientPlayNetworking.send(payload);
-                            }
-                        }
+                        PhotographyHud.debugViewfinder("right-click while active");
+                        PhotographyHud.handleRightClickWhileActive();
                     } else {
                         PhotographyHud.openViewfinder(hand);
                     }
                 }
+                cir.setReturnValue(InteractionResult.SUCCESS);
             } else {
                 user.playSound(SoundEvents.SPYGLASS_USE, 1.0f, 1.0f);
                 user.awardStat(Stats.ITEM_USED.get(Items.SPYGLASS));
@@ -62,7 +49,9 @@ public abstract class SpyglassItemMixin {
             }
         } else {
             boolean isPhotographyCamera = PhotographyCamera.isPhotographyCamera(user.getItemInHand(hand));
-            if (!isPhotographyCamera) {
+            if (isPhotographyCamera) {
+                cir.setReturnValue(InteractionResult.SUCCESS);
+            } else {
                 if (!((PlayerIsUsingCamera) user).isUsingPhotographyCamera()) {
                     user.playSound(SoundEvents.SPYGLASS_USE, 1.0f, 1.0f);
                     user.awardStat(Stats.ITEM_USED.get(Items.SPYGLASS));

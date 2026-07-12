@@ -2,6 +2,6 @@
 	"credit": "Photography mod (by BlouFlin)",
 	"parent": "minecraft:item/generated",
 	"textures": {
-		"layer0": "photography:item/filled_photographic_paper"
+		"layer0": "photography:item/exposure_photograph_icon"
 	}
 }

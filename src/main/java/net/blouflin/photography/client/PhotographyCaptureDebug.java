@@ -3,6 +3,7 @@ package net.blouflin.photography.client;
 import net.blouflin.photography.Photography;
 import net.blouflin.photography.PngWriter;
 import net.minecraft.client.Minecraft;
+import com.mojang.blaze3d.platform.Window;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 
@@ -19,38 +20,107 @@ public final class PhotographyCaptureDebug {
     private PhotographyCaptureDebug() {
     }
 
-    public static void logCaptureStart() {
+    public static void logCaptureStart(String captureId) {
+        STAGE_EDGE_STATS.clear();
         if (DEBUG_CAPTURE_IMAGES) {
-            Photography.LOGGER.info("[PhotographyDebug] capture diagnostics enabled; writing to {}", debugDirectory());
+            Photography.LOGGER.info("[PhotographyCaptureDebug] capture id={} diagnostics enabled; writing to {}", captureId, debugDirectory());
         } else if (!loggedCaptureDiagnosticsDisabled) {
             loggedCaptureDiagnosticsDisabled = true;
-            Photography.LOGGER.info("[PhotographyDebug] capture diagnostics disabled; enable -Dphotography.debugCaptureImages=true");
+            Photography.LOGGER.info("[PhotographyCaptureDebug] capture diagnostics disabled; enable -Dphotography.debugCaptureImages=true");
         }
     }
 
-    public static void writeArgb(String stage, int[] pixels, int width, int height) {
+    public static void logCaptureContext(String captureId, String cameraState, boolean settingsOpen, boolean selfieMode,
+                                         double zoom, double fovMultiplier, int focalLength, String shutterSpeed,
+                                         String flashMode, boolean resolvedFlash, String shutterFeedbackColor,
+                                         float flashBrightnessMultiplier, float shutterSpeedBrightnessMultiplier,
+                                         float totalBrightnessMultiplier) {
         if (!DEBUG_CAPTURE_IMAGES) {
             return;
         }
 
-        logEdgeStats(stage, pixels, width, height);
-        Path outputPath = debugDirectory().resolve(stage + ".png");
+        Photography.LOGGER.info("[PhotographyCaptureDebug] capture id={} state={} settingsOpen={} selfie={} zoom={} fovMultiplier={} focalLength={}mm shutterSpeed={} flashMode={} resolvedFlash={} shutterFeedbackColor={} flashBrightnessMultiplier={} shutterSpeedBrightnessMultiplier={} totalBrightnessMultiplier={}",
+                captureId, cameraState, settingsOpen, selfieMode, zoom, fovMultiplier, focalLength, shutterSpeed, flashMode, resolvedFlash, shutterFeedbackColor, flashBrightnessMultiplier, shutterSpeedBrightnessMultiplier, totalBrightnessMultiplier);
+    }
+
+    public static void logRawReadbackState(String captureId, boolean suppressHud, boolean controlsOpen,
+                                           boolean visualShutter, float flashOpacity, boolean renderMask) {
+        if (!DEBUG_CAPTURE_IMAGES) {
+            return;
+        }
+
+        Minecraft client = Minecraft.getInstance();
+        Window window = client.getWindow();
+        String scissorState = String.valueOf(com.mojang.blaze3d.systems.RenderSystem.getScissorStateForRenderTypeDraws());
+        Photography.LOGGER.info("[PhotographyCaptureDebug] capture id={} raw readback state: suppressHud={} controlsOpen={} visualShutter={} flash={} mask={} viewport=<unavailable> scissor={} framebuffer={}x{} window={}x{} gui={}x{}",
+                captureId,
+                suppressHud,
+                controlsOpen,
+                visualShutter,
+                flashOpacity,
+                renderMask,
+                scissorState,
+                client.gameRenderer.mainRenderTarget().width,
+                client.gameRenderer.mainRenderTarget().height,
+                window.getWidth(),
+                window.getHeight(),
+                window.getGuiScaledWidth(),
+                window.getGuiScaledHeight());
+    }
+
+    public static void logControlsOpenReadbackState(String captureId, String screenClass, boolean controlsOpen,
+                                                    boolean suppressHud, boolean controlsRenderSuppressed,
+                                                    boolean visualShutter, boolean screenBackground) {
+        if (!DEBUG_CAPTURE_IMAGES) {
+            return;
+        }
+
+        Photography.LOGGER.info("[PhotographyCaptureDebug] capture id={} controls-open readback state: screen={} controlsOpen={} suppressHud={} controlsRenderSuppressed={} visualShutter={} screenBackground={}",
+                captureId,
+                screenClass,
+                controlsOpen,
+                suppressHud,
+                controlsRenderSuppressed,
+                visualShutter,
+                screenBackground);
+    }
+
+    public static void logRawReadbackComplete(String captureId, int[] pixels, int width, int height) {
+        if (!DEBUG_CAPTURE_IMAGES) {
+            return;
+        }
+
+        EdgeStats top = analyzeHorizontalEdge(pixels, width, 0);
+        EdgeStats bottom = analyzeHorizontalEdge(pixels, width, height - 1);
+        EdgeStats left = analyzeVerticalEdge(pixels, width, height, 0);
+        EdgeStats right = analyzeVerticalEdge(pixels, width, height, width - 1);
+        Photography.LOGGER.info("[PhotographyCaptureDebug] capture id={} raw readback complete: bottomEdgeBlack={} topEdgeBlack={} leftEdgeBlack={} rightEdgeBlack={}",
+                captureId, bottom.blackRatio(), top.blackRatio(), left.blackRatio(), right.blackRatio());
+    }
+
+    public static void writeArgb(String captureId, String stage, int[] pixels, int width, int height) {
+        if (!DEBUG_CAPTURE_IMAGES) {
+            return;
+        }
+
+        logEdgeStats(captureId, stage, pixels, width, height);
+        Path outputPath = debugDirectory().resolve(captureId + "_" + stage + ".png");
         try {
             PngWriter.writeArgb(outputPath, pixels, width, height);
-            Photography.LOGGER.info("[capture-images] wrote {}", outputPath);
+            Photography.LOGGER.info("[PhotographyCaptureDebug] id={} wrote {}", captureId, outputPath);
         } catch (IOException e) {
-            Photography.LOGGER.error("[capture-images] failed to write {}", outputPath, e);
+            Photography.LOGGER.error("[PhotographyCaptureDebug] id={} failed to write {}", captureId, outputPath, e);
         }
     }
 
-    public static void writeMapColors(String stage, MapItemSavedData mapState) {
+    public static void writeMapColors(String captureId, String stage, MapItemSavedData mapState) {
         if (!DEBUG_CAPTURE_IMAGES) {
             return;
         }
 
         int size = (int) Math.sqrt(mapState.colors.length);
         if (size * size != mapState.colors.length) {
-            Photography.LOGGER.warn("[capture-images] cannot dump non-square map color array: {}", mapState.colors.length);
+            Photography.LOGGER.warn("[PhotographyCaptureDebug] id={} cannot dump non-square map color array: {}", captureId, mapState.colors.length);
             return;
         }
 
@@ -58,10 +128,10 @@ public final class PhotographyCaptureDebug {
         for (int i = 0; i < mapState.colors.length; i++) {
             pixels[i] = MapColor.getColorFromPackedId(Byte.toUnsignedInt(mapState.colors[i]));
         }
-        writeArgb(stage, pixels, size, size);
+        writeArgb(captureId, stage, pixels, size, size);
     }
 
-    public static void identifyLikelyBlackEdgeSource() {
+    public static void identifyLikelyBlackEdgeSource(String captureId) {
         if (!DEBUG_CAPTURE_IMAGES) {
             return;
         }
@@ -79,37 +149,38 @@ public final class PhotographyCaptureDebug {
         String reason = highestBottomBlackRatio > 0.25d
                 ? "bottom edge contains many black pixels"
                 : "no stage has a strongly black bottom edge; inspect PNGs for color/alpha artifact";
-        Photography.LOGGER.info("[PhotographyDebug] black-edge source stage={} likely cause={} bottomBlackRatio={}",
-                likelyStage, reason, highestBottomBlackRatio);
+        Photography.LOGGER.info("[PhotographyCaptureDebug] capture id={} black-edge source stage={} likely cause={} bottomBlackRatio={}",
+                captureId, likelyStage, reason, highestBottomBlackRatio);
     }
 
-    public static void logSampleBounds(String stage, int sourceSize, int destinationSize, int firstSource, int lastSource) {
+    public static void logSampleBounds(String captureId, String stage, int sourceSize, int destinationSize, int firstSource, int lastSource) {
         if (!DEBUG_CAPTURE_IMAGES) {
             return;
         }
 
-        Photography.LOGGER.info("[capture-images] {} sample bounds: sourceSize={}, destinationSize={}, firstSource={}, lastSource={}",
-                stage, sourceSize, destinationSize, firstSource, lastSource);
+        Photography.LOGGER.info("[PhotographyCaptureDebug] id={} {} sample bounds: sourceSize={}, destinationSize={}, firstSource={}, lastSource={}",
+                captureId, stage, sourceSize, destinationSize, firstSource, lastSource);
     }
 
-    public static void logCropSource(int cropX, int cropY, int cropSize, int framebufferWidth, int framebufferHeight) {
+    public static void logCropSource(String captureId, int cropX, int cropY, int cropSize, int framebufferWidth, int framebufferHeight) {
         if (!DEBUG_CAPTURE_IMAGES) {
             return;
         }
 
-        Photography.LOGGER.info("[capture-images] crop source: x={}, y={}, size={}, framebuffer={}x{}",
-                cropX, cropY, cropSize, framebufferWidth, framebufferHeight);
+        Photography.LOGGER.info("[PhotographyCaptureDebug] id={} crop source: x={}, y={}, size={}, framebuffer={}x{}, finalOutput=128x128",
+                captureId, cropX, cropY, cropSize, framebufferWidth, framebufferHeight);
     }
 
-    private static void logEdgeStats(String stage, int[] pixels, int width, int height) {
+    private static void logEdgeStats(String captureId, String stage, int[] pixels, int width, int height) {
         EdgeStats top = analyzeHorizontalEdge(pixels, width, 0);
         EdgeStats bottom = analyzeHorizontalEdge(pixels, width, height - 1);
         EdgeStats left = analyzeVerticalEdge(pixels, width, height, 0);
         EdgeStats right = analyzeVerticalEdge(pixels, width, height, width - 1);
         STAGE_EDGE_STATS.put(stage, new StageEdgeStats(top, bottom, left, right));
 
-        Photography.LOGGER.info("[capture-images] {} edge stats: top={}, bottom={}, left={}, right={}, size={}x{}",
-                stage, top, bottom, left, right, width, height);
+        Photography.LOGGER.info("[PhotographyCaptureDebug] id={} {} edge stats: top={}, bottom={}, left={}, right={}, size={}x{}",
+                captureId, stage, top, bottom, left, right, width, height);
+        Photography.LOGGER.info("[PhotographyCaptureDebug] id={} {} bottom edge stats: {}", captureId, stage, bottom);
     }
 
     private static EdgeStats analyzeHorizontalEdge(int[] pixels, int width, int y) {

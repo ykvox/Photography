@@ -6,56 +6,86 @@
     "entries": [
       {
         "threshold": 56774,
-        "model":{
-          "type": "minecraft:model",
-          "model": "photography:item/exposure/camera"
+        "model": {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "photography:item/exposure/camera_gui"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "photography:item/exposure/camera"
+          }
         }
       },
       {
         "threshold": 56777,
-        "model":{
-          "type": "minecraft:model",
-          "model": "photography:item/exposure/camera_selfie"
+        "model": {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "photography:item/exposure/camera_gui"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "photography:item/exposure/camera_selfie"
+          }
+        }
+      },
+      {
+        "threshold": 56778,
+        "model": {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "gui",
+              "model": {
+                "type": "minecraft:model",
+                "model": "photography:item/exposure/camera_gui"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "photography:item/exposure/camera_active"
+          }
         }
       }
     ],
     "fallback": {
       "type": "minecraft:select",
-      "property": "minecraft:custom_model_data",
-      "fallback": {
-        "type": "minecraft:select",
-        "cases": [
-          {
-            "model": {
-              "type": "minecraft:model",
-              "model": "minecraft:item/spyglass"
-            },
-            "when": [
-              "gui",
-              "ground",
-              "fixed",
-              "on_shelf"
-            ]
-          }
-        ],
-        "fallback": {
-          "type": "minecraft:model",
-          "model": "minecraft:item/spyglass_in_hand"
-        },
-        "property": "minecraft:display_context"
-      },
+      "property": "minecraft:display_context",
       "cases": [
         {
           "when": [
-            "isPhotographyCamera",
-            "56774"
+            "gui",
+            "ground",
+            "fixed",
+            "on_shelf"
           ],
-          "model":{
+          "model": {
             "type": "minecraft:model",
-            "model": "photography:item/exposure/camera"
+            "model": "minecraft:item/spyglass"
           }
         }
-      ]
+      ],
+      "fallback": {
+        "type": "minecraft:model",
+        "model": "minecraft:item/spyglass_in_hand"
+      }
     }
   },
   "properties": {

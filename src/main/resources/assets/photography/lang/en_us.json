@@ -1,6 +1,26 @@
 {
   "item.photography.camera": "Camera",
+  "item.photography.album": "Photo Album",
+  "item.photography.camera_stand": "Camera Stand",
+  "entity.photography.camera_stand": "Camera Stand",
+  "item.photography.album.tooltip.photos_count": "Photos: %s",
   "item.photography.empty_map": "Photographic Paper",
   "item.photography.filled_map": "Photograph",
-  "subtitles.photography.camera_shutter": "Camera shutter release"
+  "subtitles.photography.camera_shutter": "Camera shutter release",
+  "subtitles.photography.camera.viewfinder_open": "Camera viewfinder opens",
+  "subtitles.photography.camera.viewfinder_close": "Camera viewfinder closes",
+  "subtitles.photography.camera.shutter": "Camera shutter",
+  "subtitles.photography.camera.film_advance": "Camera film advances",
+  "subtitles.photography.camera.film_advance_last": "Camera film ends",
+  "subtitles.photography.camera.button_click": "Camera button clicks",
+  "subtitles.photography.camera.release_button_click": "Camera button releases",
+  "subtitles.photography.camera.dial_click": "Camera dial clicks",
+  "subtitles.photography.camera.timer": "Camera timer ticks",
+  "subtitles.photography.camera.flash": "Camera flash fires",
+  "subtitles.photography.camera.print": "Camera controls slide",
+  "subtitles.photography.photograph.rustle": "Photograph rustles",
+  "subtitles.photography.photograph.place": "Photograph placed",
+  "key.categories.photography": "Photography",
+  "key.categories.photography.photography": "Photography",
+  "key.photography.shoot": "Take Photo"
 }

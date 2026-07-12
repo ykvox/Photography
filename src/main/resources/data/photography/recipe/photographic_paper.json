@@ -9,7 +9,7 @@
   ],
   "result": {
     "id": "minecraft:paper",
-    "count": 1,
+    "count": 4,
     "components": {
       "minecraft:item_name": {
         "translate": "photography:empty_map",

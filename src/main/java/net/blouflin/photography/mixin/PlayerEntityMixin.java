@@ -22,7 +22,17 @@ public abstract class PlayerEntityMixin implements PlayerIsUsingCamera {
     }
 
     @Override
+    public boolean isUsingPhotographySelfie() {
+        return playerExtension.isUsingPhotographySelfie();
+    }
+
+    @Override
     public void setUsingPhotographyCamera(boolean isUsingPhotographyCamera, String handUsingPhotographyCamera) {
         playerExtension.setUsingPhotographyCamera(isUsingPhotographyCamera, handUsingPhotographyCamera);
+    }
+
+    @Override
+    public void setUsingPhotographyCamera(boolean isUsingPhotographyCamera, String handUsingPhotographyCamera, boolean selfie) {
+        playerExtension.setUsingPhotographyCamera(isUsingPhotographyCamera, handUsingPhotographyCamera, selfie);
     }
 }

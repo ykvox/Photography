@@ -14,7 +14,7 @@ public class FovMultiplierMixin {
     @Inject(method = "getFieldOfViewModifier", at = @At("HEAD"), cancellable = true)
     private void injected(CallbackInfoReturnable<Float> cir) {
         if (Minecraft.getInstance().options.getCameraType().isFirstPerson() && PhotographyHud.isUsingPhotographyCamera) {
-            cir.setReturnValue(0.5f * (float) PhotographyHud.zoomAmount);
+            cir.setReturnValue((float) PhotographyHud.currentFovMultiplier());
         }
     }
 }

@@ -1,5 +1,60 @@
 {
-	"parent": "photography:item/exposure/camera",
+	"render_type": "minecraft:cutout",
+	"texture_size": [32, 32],
+	"textures": {
+		"particle": "photography:item/exposure/camera/camera",
+		"camera": "photography:item/exposure/camera/camera",
+		"selfie_stick": "photography:item/exposure/camera/selfie_stick"
+	},
+	"elements": [
+		{
+			"name": "body",
+			"from": [5, 0, 4],
+			"to": [11, 6, 12],
+			"faces": {
+				"north": {"uv": [3, 0, 6, 3], "rotation": 180, "texture": "#camera"},
+				"east": {"uv": [6, 3, 9, 7], "rotation": 90, "texture": "#camera"},
+				"south": {"uv": [3, 7, 6, 10], "texture": "#camera"},
+				"west": {"uv": [0, 3, 3, 7], "rotation": 270, "texture": "#camera"},
+				"up": {"uv": [6, 7, 3, 3], "rotation": 180, "texture": "#camera"},
+				"down": {"uv": [6, 10, 3, 14], "texture": "#camera"}
+			}
+		},
+		{
+			"name": "lens",
+			"from": [6, 1, 2],
+			"to": [10, 5, 4],
+			"faces": {
+				"north": {"uv": [10.5, 1, 12.5, 3], "texture": "#camera"},
+				"east": {"uv": [9.5, 1, 10.5, 3], "texture": "#camera"},
+				"west": {"uv": [12.5, 1, 13.5, 3], "texture": "#camera"},
+				"up": {"uv": [10.5, 0, 12.5, 1], "rotation": 180, "texture": "#camera"},
+				"down": {"uv": [10.5, 3, 12.5, 4], "rotation": 180, "texture": "#camera"}
+			}
+		},
+		{
+			"name": "lens_glass",
+			"from": [6.8, 1.8, 2.02],
+			"to": [9.2, 4.2, 3.02],
+			"faces": {
+				"north": {"uv": [14, 0.5, 15, 1.5], "texture": "#camera", "tintindex": 1}
+			}
+		},
+		{
+			"name": "selfie_stick",
+			"from": [7, -2, -9],
+			"to": [9, 0, 9],
+			"faces": {
+				"north": {"uv": [0, 0, 1, 1], "texture": "#selfie_stick"},
+				"east": {"uv": [0, 1, 1, 10], "rotation": 90, "texture": "#selfie_stick"},
+				"south": {"uv": [0, 10, 1, 11], "texture": "#selfie_stick"},
+				"west": {"uv": [0, 1, 1, 10], "rotation": 270, "texture": "#selfie_stick"},
+				"up": {"uv": [0, 1, 1, 10], "texture": "#selfie_stick"},
+				"down": {"uv": [0, 1, 1, 10], "rotation": 180, "texture": "#selfie_stick"}
+			}
+		}
+	],
+	"gui_light": "front",
 	"display": {
 		"thirdperson_righthand": {
 			"rotation": [3, 177, 0],
@@ -34,13 +89,5 @@
 			"translation": [1.5, 8.75, -2.5],
 			"scale": [1.75, 1.75, 1.75]
 		}
-	},
-	"overrides": [
-		{
-			"predicate": {
-				"photography:camera_gold": 1
-			},
-			"model": "photography:item/exposure/camera_gold_selfie"
-		}
-	]
+	}
 }

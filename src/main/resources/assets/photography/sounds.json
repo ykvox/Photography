@@ -9,5 +9,110 @@
       "photography:item/camera/camera_shutter5",
       "photography:item/camera/camera_shutter6"
     ]
+  },
+  "item.camera.viewfinder_open": {
+    "subtitle": "subtitles.photography.camera.viewfinder_open",
+    "sounds": [
+      "photography:item/camera/viewfinder_open"
+    ]
+  },
+  "item.camera.viewfinder_close": {
+    "subtitle": "subtitles.photography.camera.viewfinder_close",
+    "sounds": [
+      "photography:item/camera/viewfinder_close"
+    ]
+  },
+  "item.camera.shutter_open": {
+    "subtitle": "subtitles.photography.camera.shutter",
+    "sounds": [
+      "photography:item/camera/shutter_open1",
+      "photography:item/camera/shutter_open2"
+    ]
+  },
+  "item.camera.shutter_close": {
+    "subtitle": "subtitles.photography.camera.shutter",
+    "sounds": [
+      "photography:item/camera/shutter_close1",
+      "photography:item/camera/shutter_close2"
+    ]
+  },
+  "item.camera.film_advance": {
+    "subtitle": "subtitles.photography.camera.film_advance",
+    "sounds": [
+      "photography:item/camera/film_advance1",
+      "photography:item/camera/film_advance2"
+    ]
+  },
+  "item.camera.film_advance_last": {
+    "subtitle": "subtitles.photography.camera.film_advance_last",
+    "sounds": [
+      "photography:item/camera/film_advance_last"
+    ]
+  },
+  "item.camera.button_click": {
+    "subtitle": "subtitles.photography.camera.button_click",
+    "sounds": [
+      {
+        "name": "photography:item/camera/button_click",
+        "volume": 0.6
+      }
+    ]
+  },
+  "item.camera.release_button_click": {
+    "subtitle": "subtitles.photography.camera.release_button_click",
+    "sounds": [
+      "photography:item/camera/release_button_click"
+    ]
+  },
+  "item.camera.dial_click": {
+    "subtitle": "subtitles.photography.camera.dial_click",
+    "sounds": [
+      "photography:item/camera/dial_click"
+    ]
+  },
+  "item.camera.lens_ring_click": {
+    "sounds": [
+      "photography:item/camera/lens_ring1",
+      "photography:item/camera/lens_ring2",
+      "photography:item/camera/lens_ring3"
+    ]
+  },
+  "item.camera.timer_tick": {
+    "subtitle": "subtitles.photography.camera.timer",
+    "sounds": [
+      "photography:item/camera/timer1",
+      "photography:item/camera/timer2",
+      "photography:item/camera/timer3",
+      "photography:item/camera/timer4"
+    ]
+  },
+  "item.camera.flash": {
+    "subtitle": "subtitles.photography.camera.flash",
+    "sounds": [
+      "photography:item/camera/flash"
+    ]
+  },
+  "item.camera.print": {
+    "subtitle": "subtitles.photography.camera.print",
+    "sounds": [
+      "photography:item/camera/print1",
+      "photography:item/camera/print2",
+      "photography:item/camera/print3",
+      "photography:item/camera/print4",
+      "photography:item/camera/print5"
+    ]
+  },
+  "item.photograph.rustle": {
+    "subtitle": "subtitles.photography.photograph.rustle",
+    "sounds": [
+      "photography:item/photograph/rustle"
+    ]
+  },
+  "item.photograph.place": {
+    "subtitle": "subtitles.photography.photograph.place",
+    "sounds": [
+      "photography:item/photograph/place1",
+      "photography:item/photograph/place2"
+    ]
   }
 }

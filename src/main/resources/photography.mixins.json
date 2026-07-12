@@ -4,15 +4,24 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "PlayerEntityMixin",
-    "RegistrySyncManagerMixin"
+    "PlayerListMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
+    "AvatarRenderStateMixin",
     "FovMultiplierMixin",
     "CameraMixin",
+    "GameRendererMixin",
+    "HumanoidModelMixin",
+    "ItemFrameRendererMixin",
+    "ItemFrameRenderStateMixin",
+    "ItemInHandRendererMixin",
+    "ItemModelResolverMixin",
+    "ItemTooltipMixin",
     "KeyboardMixin",
+    "MinecraftMixin",
     "MouseMixin",
     "PlayerEntityRendererMixin",
     "SpyglassItemMixin"
